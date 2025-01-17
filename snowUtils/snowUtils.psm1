@@ -262,7 +262,7 @@ function Build-Module {
         
         .PARAMETER ModuleName
             [REQUIRED PARAMETER]
-            The folder containing a .csproj file which will be built to a Module
+            Path to a Folder containing a .csproj file which will be built to a Module
             
         .PARAMETER TargetPlatform
             The .NET RID (Runtime IDentifier) for the target platform
@@ -277,6 +277,8 @@ function Build-Module {
             -> May not work correctly
             Defaults to $False.
         
+        .LINK https://github.com/schnow265/snowUtils/wiki/Avaliable-Commands#build-module
+
         .EXAMPLE
             Build-Module snowUtils 
             # Build the project avaliable in the folder 'snowUtils'
