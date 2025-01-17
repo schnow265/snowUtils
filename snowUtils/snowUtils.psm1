@@ -2,7 +2,6 @@
 
 if (Test-Path $binaryPath) {
     Import-Module -Name $binaryPath -PassThru | Out-Null
-    Write-Host "Binary Module loaded! All of the funny C# cmdlets should run now!"
 } else {
     Write-Error "Binary module not found at path: $binaryPath"
     exit 1
@@ -12,7 +11,26 @@ if (Test-Path $binaryPath) {
 # TODO: Update everything to a Binary Module
 
 function Test-Command {
-    Param ($command)
+    <#
+        .SYNOPSIS
+            Check if a command is avaliable
+        
+        .DESCRIPTION
+            Returns True when a command is found on the system's PATH.
+        
+        .EXAMPLE
+            Test-Command explorer
+            True
+        
+        .EXAMPLE
+            Test-Command thisDoesNotExist
+            False
+    #>
+
+    param (
+        
+        [string] $command
+    )
     $prefstore = $ErrorActionPreference
     $ErrorActionPreference = 'stop'
 
@@ -32,61 +50,125 @@ function Test-Command {
 }
 
 function Clear-SystemData {
-    if (Test-Path $HOME/.gradle) {
-        Write-Host "Removing the gradle cache..."
-        Remove-Item -Recurse -Force $HOME/.gradle
+    
+    <#
+        .SYNOPSIS
+            Clean multiple caches, empty the bin and execute other tasks
+
+        .PARAMETER CleanJava
+            Empty the gradle ($HOME/.gradle) and Maven/m2 ($HOME/.m2/repository) caches.
+            Defaults to true
+        
+        .PARAMETER CleanPython
+            Get all installed system-wide pip packages and remove them.
+            Defaults to true
+        
+        .PARAMETER CleanNuget
+            Run the nuget command which cleans all cached packages.
+            Defaults to true
+        
+        .PARAMETER CleanContainers
+            Start podman, delete all stopped containers and then prune all the images, then stop the machine again.
+            This step will NOT prune volumes.
+
+        .PARAMETER CleanPackageManagers
+            If scoop and choco are installed, clean them up.
+        
+        .PARAMETER EmptyTrash
+            It's just Clear-RecycleBin
+            
+        .EXAMPLE
+            Clear-SystemData
+            # Empty everything.
+        
+        .EXAMPLE
+            Clear-SystemData -CleanJava 0 -CleanPython 0 -CleanContainers 0
+            # Skip the clearing of Maven, Gradle, pip-global packages and containers.
+        
+    #>
+    
+    [CmdletBinding()]
+    param(
+        [bool] $CleanJava = $true,
+        [bool] $CleanPython = $true,
+        [bool] $CleanNuget = $true,
+        [bool] $CleanContainers = $true,
+        [bool] $CleanPackageManagers = $true,
+        [bool] $EmptyTrash = $true
+    )
+    
+    if ($CleanJava) {
+        if (Test-Path $HOME/.gradle) {
+            Write-Host "Removing the gradle cache..."
+            Remove-Item -Recurse -Force $HOME/.gradle
+        }
+    
+        if (Test-Path $HOME/.m2/repository) {
+            Write-Host "Removing the maven cache..."
+            Remove-Item -Recurse -Force $HOME/.m2/repository
+        }
+    }
+    
+    if ($CleanPython) {
+        if (Test-Command pip) {
+            Write-Host "Removing all system-wide installed pip packages..."
+            pip freeze | ForEach-Object { pip uninstall $_ -y }
+        }
     }
 
-    if (Test-Path $HOME/.m2/repository) {
-        Write-Host "Removing the maven cache..."
-        Remove-Item -Recurse -Force $HOME/.m2/repository
+    if ($CleanNuget) {
+        if (Test-Command dotnet)
+        {
+            Write-Host "Clearing the NuGet caches..."
+            dotnet nuget locals --clear all
+        }
     }
 
-    if (Test-Command pip) {
-        Write-Host "Removing all system-wide installed pip packages..."
-        pip freeze | ForEach-Object { pip uninstall $_ -y }
+    if ($CleanContainers) {
+        if (Test-Command podman)
+        {
+            podman machine start
+
+            podman container prune -f
+            podman image prune -f
+
+            podman machine stop
+        }
     }
 
-    if (Test-Command dotnet) {
-        Write-Host "Clearing the NuGet caches..."
-        dotnet nuget locals --clear all
-    }
-
-    if (Test-Command scoop) {
-        Write-Host "Cleaning up scoop..."
-        scoop cache rm *
-        scoop cleanup *
-    }
-
-    if (Test-Command podman) {
-        podman machine start
-
-        podman container prune -f
-        podman image prune -f
-
-        podman machine stop
-    }
-
-    if (Test-Command choco) {
-        if (Test-Command sudo) {
-            if (!(Test-Path "C:\tools\BCURRAN3\choco-cleaner.ps1")) {
-                sudo choco install choco-cleaner
+    if ($CleanPackageManagers) {
+        if (Test-Command scoop) {
+            Write-Host "Cleaning up scoop..."
+            scoop cache rm *
+            scoop cleanup *
+        }
+        
+        if (Test-Command choco) {
+            if (Test-Command sudo) {
+                if (!(Test-Path "C:\tools\BCURRAN3\choco-cleaner.ps1")) {
+                    sudo choco install choco-cleaner
+                }
+                sudo "C:\tools\BCURRAN3\choco-cleaner.ps1"
             }
-            sudo "C:\tools\BCURRAN3\choco-cleaner.ps1"
-        }
-        else {
-            Write-Host -ForegroundColor Red "Please install a 'sudo' binary to clean up chcoco packages."
+            else {
+                Write-Host -ForegroundColor Red "Please install a 'sudo' binary to clean up chcoco packages."
+            }
         }
     }
+    
+    if ($EmptyTrash) {
+        Clear-RecycleBin -DriveLetter C -Force
+    }
 
-    Clear-RecycleBin -DriveLetter C -Force
 
     Write-Host "We are done here!" -ForegroundColor Green
 }
 
 function Unblock-Recurse {
-    [CmdletBinding()]
-    param ()
+    <#
+        .SYNOPSIS
+            Allow the execution of an entire directory tree.
+    #>
 
     $previous = Get-ExecutionPolicy -Scope Process
     Set-ExecutionPolicy Bypass -Scope Process
@@ -174,15 +256,52 @@ function Copy-SSHKey {
 }
 
 function Build-Module {
+    <#  
+        .SYNOPSIS     
+        Build a PowerShell Module and optionally load them.
+        
+        .PARAMETER ModuleName
+            [REQUIRED PARAMETER]
+            The folder containing a .csproj file which will be built to a Module
+            
+        .PARAMETER TargetPlatform
+            The .NET RID (Runtime IDentifier) for the target platform
+            Defaults to "win-x64" (Windows 64-Bit)
+        
+        .PARAMETER TargetPath
+            The Output folder for the artifacts.
+            Defaults to "./output"
+        
+        .PARAMETER LoadDirectly
+            If the compiled module should be loaded automatically.
+            -> May not work correctly
+            Defaults to $False.
+        
+        .EXAMPLE
+            Build-Module snowUtils 
+            # Build the project avaliable in the folder 'snowUtils'
+        
+        .EXAMPLE
+            Build-Module snowUtils -TargetPlatform linux-x64
+            # Build the project avaliable in the folder 'snowUtils' for another Architechture other than win-x64
+        
+        .EXAMPLE
+            Build-Module snowUtils -LoadDirectly 1
+            # Build the project avaliable in the folder 'snowUtils' and attempt to load it directly.
+        
+        .EXAMPLE 
+            Build-Module snowUtils -TargetPlatform linux-x64 -TargetPath ./linux-build -LoadDirectly 0
+            # Build the project into another directory for Linux Systems and be sure that loading is disabled.
+    #>
     [CmdletBinding()]
     param (
         [string] $ModuleName,
 
         $TargetPlatform = "win-x64",
 
-        $TargetPath = ".\build",
+        $TargetPath = "./build",
         
-        [bool] $LoadDirectly = $true
+        [bool] $LoadDirectly = $false
     )
 
     Remove-Module $ModuleName -ErrorAction SilentlyContinue

@@ -27,7 +27,7 @@
     CompanyName = 'schnow265'
 
     # Copyright statement for this module
-    Copyright = '(c) schnow265. All rights reserved.'
+    Copyright = 'MIT License - Copyright (c) 2025 schnow265 (aka Luca E. Scalet)'
 
     # Description of the functionality provided by this module
     Description = 'My PowerShell Function library extracted into a module'
@@ -100,10 +100,10 @@
             # Tags = @()
     
             # A URL to the license for this module.
-            # LicenseUri = ''
+            LicenseUri = 'https://github.com/schnow265/snowUtils/blob/master/LICENSE'
     
             # A URL to the main website for this project.
-            # ProjectUri = ''
+            ProjectUri = 'https://github.com/schnow265/snowUtils'
     
             # A URL to an icon representing this module.
             # IconUri = ''
@@ -115,7 +115,7 @@
             # Prerelease = ''
     
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
-            # RequireLicenseAcceptance = $false
+            RequireLicenseAcceptance = $true
     
             # External dependent modules of this module
             # ExternalModuleDependencies = @()
@@ -123,6 +123,6 @@
     }
 
     # HelpInfo URI of this module
-    # HelpInfoURI = ''
+    # HelpInfoURI = 'https://github.com/schnow265/snowUtils/wiki'
 }
 
