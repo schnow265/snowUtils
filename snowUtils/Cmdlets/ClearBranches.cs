@@ -6,7 +6,7 @@ using LibGit2Sharp;
 namespace snowUtils.Cmdlets;
 
 [Cmdlet(VerbsCommon.Clear, "Branches", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High)]
-public class ClearBranchesCmdlet : Cmdlet
+public class ClearBranches : Cmdlet
 {
     [Parameter(Mandatory = true)]
     public string RepositoryPath { get; set; }
@@ -14,11 +14,11 @@ public class ClearBranchesCmdlet : Cmdlet
     [Parameter(Mandatory = false)]
     public string DevelopBranch { get; set; } = "develop";
 
-    [Parameter(Mandatory = false)] 
+    [Parameter(Mandatory = false)]
     public string Remote { get; set; } = "origin";
 
     protected override void ProcessRecord()
-    {   
+    {
         // Ensure the repository path exists and is valid
         if (!Repository.IsValid(RepositoryPath))
         {
@@ -30,12 +30,12 @@ public class ClearBranchesCmdlet : Cmdlet
             return;
         }
 
-        using var repo = new Repository(RepositoryPath);
+        using Repository repo = new(RepositoryPath);
         // Fetch latest updates
         Commands.Fetch(repo, Remote, Array.Empty<string>(), null, null);
 
         // Iterate over all branches
-        foreach (var branch in repo.Branches)
+        foreach (Branch branch in repo.Branches)
         {
             // Skip if it's a remote branch or the current branch
             if (branch.IsRemote || branch.IsCurrentRepositoryHead)
@@ -52,15 +52,15 @@ public class ClearBranchesCmdlet : Cmdlet
             WriteVerbose($"Branch '{branch.FriendlyName}' has no upstream.");
 
             // Search for merge commit in the develop branch log
-            var mergeCommitFound = false;
-            var developBranch = repo.Branches[DevelopBranch];
+            bool mergeCommitFound = false;
+            Branch developBranch = repo.Branches[DevelopBranch];
             if (developBranch == null)
             {
                 WriteWarning($"Develop branch '{DevelopBranch}' does not exist.");
                 continue;
             }
 
-            foreach (var commit in developBranch.Commits)
+            foreach (Commit commit in developBranch.Commits)
             {
                 if (!commit.Message.Contains($"Merge branch '{branch.FriendlyName}' into '{DevelopBranch}'"))
                 {
@@ -68,7 +68,8 @@ public class ClearBranchesCmdlet : Cmdlet
                 }
 
                 mergeCommitFound = true;
-                WriteObject($"Merge commit found for branch '{branch.FriendlyName}' in '{DevelopBranch}': {commit.Sha}");
+                WriteObject(
+                    $"Merge commit found for branch '{branch.FriendlyName}' in '{DevelopBranch}': {commit.Sha}");
                 break;
             }
 
