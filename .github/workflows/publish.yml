@@ -6,6 +6,11 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
+# Add permissions configuration
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-release-publish:
     runs-on: ubuntu-latest
@@ -60,6 +65,7 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to GitHub Packages
         run: |
