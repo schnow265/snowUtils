@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -31,7 +33,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           pwsh -Command "./scripts/Update-ManifestVersion.ps1 -ManifestPath ./snowUtils/snowUtils.psd1 -NewVersion ${{ env.VERSION }}"
-          
+
           # Update csproj file version
           pwsh -Command "
           [xml]\$csproj = Get-Content ./snowUtils/snowUtils.csproj
@@ -54,17 +56,27 @@ jobs:
         
       - name: Pack
         run: dotnet pack --no-build -c Release
+        
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ env.VERSION }}
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body_path: CHANGELOG.md
+          generate_release_notes: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to GitHub Packages
