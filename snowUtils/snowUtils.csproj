@@ -5,6 +5,18 @@
         <AssemblyName>snowUtils</AssemblyName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <RootNamespace>snowUtils</RootNamespace>
+        
+        <!-- Package info -->
+        <PackageId>schnow265.snowUtils</PackageId>
+        <Authors>schnow265</Authors>
+        <Description>My PowerShell Function library extracted into a module</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/schnow265/snowUtils</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/schnow265/snowUtils</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>powershell;utilities;git</PackageTags>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,9 +29,18 @@
     <ItemGroup>
         <None Update="snowUtils.psd1">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
         </None>
         <None Update="snowUtils.psm1">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+        <None Update="dolores.psm1">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
         </None>
     </ItemGroup>
 

@@ -390,6 +390,8 @@ function Build-Module
         Write-Host -ForegroundColor Yellow "Module $ModuleName loaded!"
 
         Get-Module $ModuleName -All
+        Write-Host -ForegroundColor Yellow "Exported Commands:"
+        Get-Command -Module $ModuleName
     }
 }
 
